@@ -6,7 +6,7 @@ An object detection API using RT-DETR, fine-tuned to detect `driver`, `helmet`, 
 
 1. Clone this repo:
 ```bash
-git clone https://github.com/Gowsan_S/helmet-detection-api.git
+git clone https://github.com/Gowsan-S/helmet-detection-api.git
 cd helmet-detection-api
 ```
 
