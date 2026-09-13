@@ -63,15 +63,15 @@ Final validation metrics:
 
 ## 6. Part B — Reasoning Layer Design
 
-The `/ask` endpoint implements a hand-written, three-stage decision process with no agentic framework:
+The `/ask` endpoint implements a hand-written, staged decision process with no agentic framework. Image reading and detection are factored into shared helper functions (`read_image`, `get_detections`) used by both `/detect` and `/ask`, and every response includes a `success` flag alongside the answer text.
 
-**1. Intent routing:** The incoming question is checked against a keyword list relevant to the image domain (e.g., "helmet," "driver," "how many," "riding"). If none match, the system immediately returns that the question doesn't require image analysis, without calling the detector at all.
+**1. Intent routing:** The incoming question is lowercased and checked against a keyword list relevant to the image domain (`helmet`, `driver`, `person`, `rider`, `how many`, `count`, `wearing`, `riding`, `no helmet`, `without helmet`, etc.). If none match, the system immediately returns `success: false` with a message that the question doesn't require image analysis, without proceeding further into the reasoning logic.
 
-**2. Confidence guardrail:** After running detection, if zero objects are found, or if the average detection confidence falls below a threshold (0.4), the system explicitly states it cannot answer confidently, rather than fabricating a response.
+**2. Confidence guardrail:** After running detection, if zero objects are found, or if the average detection confidence across all boxes falls below 0.40, the system explicitly returns `success: false` with a message stating it cannot answer confidently, rather than fabricating a response.
 
-**3. Structured reasoning:** For questions that pass both checks, the system aggregates detection counts by class and applies simple rule-based logic — e.g., counting a specific class for "how many" questions, or checking the "no-helmet" count for compliance-style questions.
+**3. Structured reasoning:** For questions that pass both checks, detections are aggregated into per-class counts. "How many"/"count" questions match a target class name against the question text and return its count; "no-helmet"/"without a helmet" phrasing checks the no-helmet count specifically; general "helmet" questions sum all helmet-positive classes; anything else falls through to a default answer listing all detected counts and asking for a more specific question.
 
-**Example of correct "insufficient information" handling:** When asked "what is the capital of France?" alongside any uploaded image, the intent router correctly identifies this as unrelated to image content (no keyword match) and responds: *"This question doesn't require image analysis, and I can't answer general questions outside of what's detected in the photo."* — avoiding any attempt to force an image-based answer to an unrelated question.
+**Example of correct "insufficient information" handling:** When asked a question unrelated to the image content (no keyword match, e.g. a general knowledge question) alongside any uploaded image, the intent router responds with `success: false` and a message that the question doesn't require image analysis and it can't answer general questions outside of what's detected in the photo — avoiding any attempt to force an image-based answer to an unrelated question.
 
 ## 7. Known Limitations & Honest Disclosure
 
@@ -79,4 +79,5 @@ Given the 5-day (and in practice, a compressed ~10-hour active work) window, the
 - No Docker containerization or cloud deployment (bonus items) — the API runs locally via Uvicorn
 - No custom data collection/labeling — relied entirely on an existing public dataset
 - Training was run for 50 epochs without hyperparameter tuning, which likely leaves accuracy on the table
-- The `/ask` reasoning layer uses rule-based logic over detection output rather than an external LLM call for phrasing, to keep the system dependency-light and fully self-contained; this trades off more natural-sounding answers for reliability and transparency in how the decision is made
+- The `/ask` reasoning layer uses rule-based logic over detection output rather than an external LLM call for phrasing, to keep the system dependency-light and fully self-contained, with no external API key or billing required; this trades off more natural-sounding answers for reliability, transparency, and reproducibility in how each decision is made
+- Detection is run with default RT-DETR confidence/IoU thresholds rather than manually tuned values; in visually dense scenes this can occasionally produce closely spaced or overlapping boxes for adjacent classes (e.g., helmet and driver), which is noted here as an area for future refinement rather than a correctness issue in the underlying detections
