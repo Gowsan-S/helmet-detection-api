@@ -6,7 +6,7 @@ An object detection API using RT-DETR, fine-tuned to detect `driver`, `helmet`, 
 
 1. Clone this repo:
 ```bash
-git clone https://github.com/YOUR_USERNAME/helmet-detection-api.git
+git clone https://github.com/Gowsan-S/helmet-detection-api.git
 cd helmet-detection-api
 ```
 
@@ -24,24 +24,43 @@ python -m uvicorn main:app --reload
 ```
 
 The API will be available at `http://127.0.0.1:8000`.
-Interactive docs (test both endpoints directly in browser): `http://127.0.0.1:8000/docs`
+Interactive docs (test all endpoints directly in browser): `http://127.0.0.1:8000/docs`
 
-## Endpoint 1: `/detect` (Part A)
+## Endpoint 0: `/` (Health/Status)
 
-Accepts an image, returns detected objects with bounding boxes and confidence scores.
+Returns basic API status and lists available endpoints.
 
-**Request:** `POST /detect`, form-data with key `file` = image file
+**Request:** `GET /`
 
 **Sample response:**
 ```json
 {
+  "message": "Motorcycle Helmet Detection API is running.",
+  "model": "RT-DETR",
+  "endpoints": ["/detect", "/ask"]
+}
+```
+
+## Endpoint 1: `/detect` (Part A)
+
+Accepts an image, returns detected objects with bounding boxes and confidence scores. Can optionally return an annotated image instead of JSON.
+
+**Request:** `POST /detect`, form-data with key `file` = image file
+**Optional query parameter:** `output` = `json` (default) or `image`
+
+**Sample response (`output=json`, default):**
+```json
+{
+  "success": true,
+  "count": 2,
   "detections": [
     {"class": "driver", "confidence": 0.91, "box": [120.5, 85.3, 310.2, 400.8]},
     {"class": "helmet", "confidence": 0.87, "box": [140.1, 60.2, 210.4, 130.9]}
-  ],
-  "count": 2
+  ]
 }
 ```
+
+**With `output=image`:** returns a JPEG image with bounding boxes, class labels, and confidence scores drawn directly on it, instead of JSON.
 
 ## Endpoint 2: `/ask` (Part B)
 
@@ -53,17 +72,17 @@ Accepts an image and a natural-language question, reasons over the detection out
 
 Question: `"is anyone riding without a helmet?"`
 ```json
-{"answer": "Yes, 1 rider(s) detected without a helmet."}
+{"success": true, "answer": "Yes, 1 rider(s) were detected without a helmet."}
 ```
 
 Question: `"how many drivers are there?"`
 ```json
-{"answer": "There are 2 driver(s) detected."}
+{"success": true, "answer": "There are 2 driver(s) detected."}
 ```
 
 Question: `"what is the capital of France?"`
 ```json
-{"answer": "This question doesn't require image analysis, and I can't answer general questions outside of what's detected in the photo."}
+{"success": false, "answer": "This question does not require image analysis. Please ask a question related to the detected objects."}
 ```
 
 ## Model Details
