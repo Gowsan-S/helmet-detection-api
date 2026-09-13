@@ -12,7 +12,7 @@ cd helmet-detection-api
 
 2. Install dependencies:
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 3. Make sure `best.pt` (the trained model weights) is in the same folder as `main.py`.
